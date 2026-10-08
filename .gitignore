@@ -1,0 +1,48 @@
+# 构建产物
+build/
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.a
+*.out
+
+# CMake 生成文件
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+
+# IDE 文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 临时文件
+/tmp/
+*.log
+*.pyc
+__pycache__/
+
+# 模型文件（太大，不适合上传到 Git）
+/models/
+*.safetensors
+*.bin
+*.pt
+*.pth
+
+# 环境变量和密钥
+.env
+*.key
+*.pem
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 编译缓存
+.ninja_*
+Testing/
