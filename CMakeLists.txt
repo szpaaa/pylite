@@ -5,14 +5,45 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-if(UNIX AND NOT APPLE)
+# ===========================================================================
+# 平台检测
+# ===========================================================================
+if(WIN32)
+  set(PYLITE_WINDOWS ON)
+  message(STATUS "目标平台: Windows")
+elseif(APPLE)
+  set(PYLITE_APPLE ON)
+  message(STATUS "目标平台: macOS")
+else()
+  set(PYLITE_LINUX ON)
+  message(STATUS "目标平台: Linux")
+endif()
+
+# ===========================================================================
+# 平台特定编译选项
+# ===========================================================================
+if(PYLITE_LINUX)
   add_link_options(-Wl,--no-as-needed)
+endif()
+
+if(PYLITE_WINDOWS)
+  # MSVC 需要 /bigobj 来处理大型编译单元
+  add_compile_options(/bigobj /W3)
+  # 禁用 min/max 宏（与 std::min/std::max 冲突）
+  add_compile_definitions(NOMINMAX)
+  # Windows 上 LLVM 通常安装在 C:\Program Files\LLVM
+  set(LLVM_HINTS
+    "C:/Program Files/LLVM/lib/cmake/llvm"
+    "C:/LLVM/lib/cmake/llvm"
+    "/usr/lib/llvm-22/lib/cmake/llvm")
+else()
+  set(LLVM_HINTS /usr/lib/llvm-22/lib/cmake/llvm)
 endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-find_package(LLVM REQUIRED CONFIG HINTS /usr/lib/llvm-22/lib/cmake/llvm)
+find_package(LLVM REQUIRED CONFIG HINTS ${LLVM_HINTS})
 message(STATUS "找到 LLVM ${LLVM_PACKAGE_VERSION} (${LLVM_DIR})")
 
 separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND "${LLVM_DEFINITIONS}")
@@ -42,7 +73,12 @@ target_include_directories(pylite_runtime PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 target_compile_options(pylite_runtime PRIVATE -fvisibility=default)
-target_link_libraries(pylite_runtime PRIVATE pthread dl)
+# 平台特定链接库
+if(PYLITE_WINDOWS)
+  target_link_libraries(pylite_runtime PRIVATE ws2_32)
+else()
+  target_link_libraries(pylite_runtime PRIVATE pthread dl)
+endif()
 
 add_library(pylite_frontend STATIC
   frontend/lexer.cpp
